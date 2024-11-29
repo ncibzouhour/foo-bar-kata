@@ -1,37 +1,35 @@
-package com.examples.foobarkata.api.rest;
+package com.examples.foobarkata.api.batch;
 
 
-import com.examples.foobarkata.domain.ports.api.IntProcessingRequester;
-import io.swagger.v3.oas.annotations.Operation;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
 
-@RestController
-@RequestMapping("/api/v1/foobar")
+@Component
 @Slf4j
-public class FooBarIntProcessorController {
+@EnableScheduling
+public class FooBarIntFileProcessorBatch {
 
-    private final IntProcessingRequester intProcessingRequester;
+    @Autowired
+    private JobLauncher jobLauncher;
 
-    public FooBarIntProcessorController(IntProcessingRequester intProcessingRequester) {
-        this.intProcessingRequester = intProcessingRequester;
-    }
+    @Autowired
+    private Job job;
 
-    @Operation(summary = "Process Int",
-            description = "Process Int into a String. The response is the result String after processing foo bar rules")
-    @GetMapping(value = "/process-int/{input}", produces = "plain/text")
-    public String processInt(@PathVariable int input) {
-        log.debug( "Calling /process-int/" + input);
 
+    @Scheduled(cron = "${foobar-int-file-processor-batch.scheduler}")
+    //@EventListener(ApplicationReadyEvent.class)
+    public void processIntFile() {
+        log.info( "Scheduled processIntFile job is started");
         try {
-            String result = intProcessingRequester.processIntToString(input);
-            log.debug( input + "-->" + result);
-            return result;
-        } catch (IllegalArgumentException exc) {
-            log.error("Error occurred : {}", exc.getMessage());
-            throw new ResponseStatusException(  HttpStatus.BAD_REQUEST, exc.getMessage(), exc);
+            jobLauncher.run(job, new JobParameters());
+        }  catch (Exception e) {
+            log.error("Error occurred : {}", e.getMessage());
         }
     }
 }

@@ -1,15 +1,17 @@
 package com.examples.foobarkata.domain.service;
 
-import com.examples.foobarkata.domain.ports.StringProcessingRequester;
+import com.examples.foobarkata.domain.ports.api.IntProcessingRequester;
+import org.springframework.stereotype.Service;
 
-public class StringProcessingService implements StringProcessingRequester {
+@Service
+public class IntProcessingService implements IntProcessingRequester {
 
     public static final String FOO = "FOO";
     public static final String BAR = "BAR";
     public static final String QUIX = "QUIX";
 
     @Override
-    public String processString(int i) throws IllegalArgumentException {
+    public String processIntToString(int i) throws IllegalArgumentException {
         if (i > 100 || i<0) {
             throw new IllegalArgumentException("Number must be between 0 and 100");
         }
