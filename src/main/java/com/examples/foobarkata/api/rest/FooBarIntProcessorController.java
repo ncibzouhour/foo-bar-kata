@@ -23,7 +23,7 @@ public class FooBarIntProcessorController {
             description = "Process Int into a String. The response is the result String after processing foo bar rules")
     @GetMapping(value = "/process-int/{input}", produces = "plain/text")
     public String processInt(@PathVariable int input) {
-        log.debug( "Calling /process-int/" + input);
+        log.debug( "Calling /process-int/ with input : " + input);
 
         try {
             String result = intProcessingRequester.processIntToString(input);

@@ -12,9 +12,6 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.FlatFileItemWriter;
-import org.springframework.batch.item.file.mapping.DefaultLineMapper;
-import org.springframework.batch.item.file.mapping.FieldSetMapper;
-import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.batch.item.file.transform.PassThroughLineAggregator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,24 +36,19 @@ public class FooBarIntFileProcessorBatchConfig {
     @Autowired
     private IntProcessingRequester intProcessingRequester;
 
-
     @Autowired
     private JobRepository jobRepository;
-    @Autowired
 
+    @Autowired
     private PlatformTransactionManager transactionManager;
 
     @Bean
     public FlatFileItemReader<Integer> fileReader() {
         FlatFileItemReader<Integer> reader = new FlatFileItemReader<>();
         reader.setResource(new FileSystemResource(inputFilePath));
-        reader.setLineMapper(new DefaultLineMapper<>() {{
-            setLineTokenizer(new DelimitedLineTokenizer() {{
-                setDelimiter(",");
-                setNames("number");
-            }});
-            setFieldSetMapper((FieldSetMapper<Integer>) fieldSet -> fieldSet.readInt(0));
-        }});
+        reader.setLineMapper((line, lineNumber) -> {
+            return Integer.parseInt(line.strip()); // trim() pour éviter les espaces blancs
+        });
         return reader;
     }
 
