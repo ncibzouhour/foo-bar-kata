@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>com.examples</groupId>
 	<artifactId>foobar-kata</artifactId>
-	<version>y</version>
+	<version>0.0.3-SNAPSHOT</version>
 	<name>foobar-kata</name>
 	<description>Foo Bar Kata</description>
 	<url />
