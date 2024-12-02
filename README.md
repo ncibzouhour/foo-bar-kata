@@ -12,3 +12,12 @@ mvn clean install
 Run as a Springboot application.
 
 You can test the application API using : http://localhost:7003/swagger-ui/index.html#
+
+## Deploy
+In order to deploy our application: 
+### With Docker : 
+Run this command to build the image and run it on docker
+`````shell
+mvn spring-boot:build-image
+`````
+
