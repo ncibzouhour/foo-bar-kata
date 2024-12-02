@@ -1,11 +1,14 @@
-package com.examples.foobarkata.api.batch;
+package com.examples.foobarkata.infra;
 
 
 import com.examples.foobarkata.domain.ports.api.IntProcessingRequester;
+import com.examples.foobarkata.domain.ports.spi.IntBatchProcessingGateway;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
+import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
@@ -15,14 +18,18 @@ import org.springframework.batch.item.file.FlatFileItemWriter;
 import org.springframework.batch.item.file.transform.PassThroughLineAggregator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import java.util.function.Function;
+
 @Component
 @Slf4j
-public class FooBarIntFileProcessorBatchConfig {
+@EnableScheduling
+public class FooBarIntFileProcessorBatch implements IntBatchProcessingGateway {
+
 
     @Value("${foobar-int-file-processor-batch.input.file.path}")
     private String inputFilePath;
@@ -42,27 +49,44 @@ public class FooBarIntFileProcessorBatchConfig {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
-    @Bean
+    @Autowired
+    private JobLauncher jobLauncher;
+
+
+    public void processIntBatchToString(Function<Integer, String> transformationFunction) {
+        Job job = job(transformationFunction);
+        try {
+            jobLauncher.run(job, new JobParameters());
+        }  catch (Exception e) {
+            log.error("Error occurred : {}", e.getMessage());
+        }
+    }
+
     public FlatFileItemReader<Integer> fileReader() {
         FlatFileItemReader<Integer> reader = new FlatFileItemReader<>();
         reader.setResource(new FileSystemResource(inputFilePath));
         reader.setLineMapper((line, lineNumber) -> {
-            return Integer.parseInt(line.strip()); // trim() pour éviter les espaces blancs
+            try {
+                return Integer.parseInt(line.strip());
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid line at " + lineNumber + ": " + line, e);
+            }
         });
         return reader;
     }
 
-    @Bean
-    public ItemProcessor<Integer, String> processor() {
+    public ItemProcessor<Integer, String> processor(Function<Integer, String> transformationSupplier) {
         return item -> {
             // concat int and the string processed
             StringBuilder sb = new StringBuilder();
-            sb.append(item).append("\t\"").append(intProcessingRequester.processIntToString(item)).append("\"");
+            sb.append(item)
+                    .append("\t\"")
+                    .append(transformationSupplier.apply(item))
+                    .append("\"");
             return sb.toString();
         };
     }
 
-    @Bean
     public FlatFileItemWriter<String> fileWriter() {
         FlatFileItemWriter<String> writer = new FlatFileItemWriter<>();
         writer.setResource(new FileSystemResource(outputFilePath));
@@ -71,25 +95,24 @@ public class FooBarIntFileProcessorBatchConfig {
     }
 
 
-    @Bean
-    public Job job(Step step) {
+    public Job job(Function<Integer, String> transformationSupplier) {
         return new JobBuilder("FileProcessingJob", jobRepository)
                 .incrementer(new RunIdIncrementer())
-                .flow(step)
+                .flow(step(transformationSupplier))
                 .end()
                 .build();
     }
 
-
-    @Bean
-    public Step step(FlatFileItemReader<Integer> fileReader,
-                     ItemProcessor<Integer, String> processor,
-                     FlatFileItemWriter<String> fileWriter) {
+    public Step step(Function<Integer, String> transformationSupplier) {
         return new StepBuilder("file-processing-step", jobRepository)
                 .<Integer, String> chunk(chunkSize, transactionManager)
-                .reader(fileReader)
-                .processor(processor)
-                .writer(fileWriter)
+                .reader(fileReader())
+                .processor(processor(transformationSupplier))
+                .writer(fileWriter())
+                .faultTolerant()
+                .skip(IllegalArgumentException.class) // Skip lines with invalid format
                 .build();
     }
+
+
 }

@@ -1,5 +1,8 @@
 package com.examples.foobarkata.api.batch;
 
+import com.examples.foobarkata.domain.ports.spi.IntBatchProcessingGateway;
+import com.examples.foobarkata.domain.service.IntProcessingService;
+import com.examples.foobarkata.infra.FooBarIntFileProcessorBatch;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,13 +27,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class FooBarIntFileProcessorBatchIT {
 
     @Autowired
+    private IntProcessingService intProcessingService;
+
+    @Autowired
     private JobLauncher jobLauncher;
 
     @Autowired
-    private Job job;
-
-    @Autowired
-    private FooBarIntFileProcessorBatch batchProcessor; // Injecter le batch pour vérifier la méthode
+    private FooBarIntFileProcessorBatch intBatchProcessingBatch; // Injecter le batch pour vérifier la méthode
 
     @Value("${foobar-int-file-processor-batch.input.file.path}")
     private String inputFilePath;
@@ -38,18 +41,21 @@ class FooBarIntFileProcessorBatchIT {
     @Value("${foobar-int-file-processor-batch.output.file.path}")
     private String outputFilePath;
 
+    private Job job;
+
     Path inputPath, outputPath;
     @BeforeEach
     public void setUp() throws Exception {
         // Prepare test data (replace with your data generation logic)
         inputPath = Paths.get(inputFilePath);
         outputPath = Paths.get(outputFilePath);
+        job = intBatchProcessingBatch.job(intProcessingService::processIntToString);
 
     }
 
     @AfterEach
     public void tearDown() throws Exception {
-        // Clean up test data
+        // Clean up result data
         Files.delete(outputPath);
     }
 

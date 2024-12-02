@@ -31,7 +31,7 @@ public class FooBarIntProcessorController {
             return result;
         } catch (IllegalArgumentException exc) {
             log.error("Error occurred : {}", exc.getMessage());
-            throw new ResponseStatusException(  HttpStatus.BAD_REQUEST, exc.getMessage(), exc);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exc.getMessage(), exc);
         }
     }
 }

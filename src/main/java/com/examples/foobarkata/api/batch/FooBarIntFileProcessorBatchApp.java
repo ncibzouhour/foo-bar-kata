@@ -1,10 +1,8 @@
 package com.examples.foobarkata.api.batch;
 
 
+import com.examples.foobarkata.domain.ports.api.IntBatchProcessingRequester;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,21 +11,18 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @EnableScheduling
-public class FooBarIntFileProcessorBatch {
+public class FooBarIntFileProcessorBatchApp {
 
     @Autowired
-    private JobLauncher jobLauncher;
-
-    @Autowired
-    private Job job;
+    private IntBatchProcessingRequester intBatchProcessingRequester;
 
 
     @Scheduled(cron = "${foobar-int-file-processor-batch.scheduler}")
     //@EventListener(ApplicationReadyEvent.class)
-    public void processIntFile() {
-        log.info( "Scheduled processIntFile job is started");
+    public void processIntBatch() {
+        log.info( "Scheduled processIntBatch job is started");
         try {
-            jobLauncher.run(job, new JobParameters());
+            intBatchProcessingRequester.processIntBatchToString();
         }  catch (Exception e) {
             log.error("Error occurred : {}", e.getMessage());
         }
