@@ -21,3 +21,9 @@ Run this command to build the image and run it on docker
 mvn spring-boot:build-image
 `````
 
+
+## Test the application
+You can test the rest API with swagger UI:
+http://localhost:7003/swagger-ui/index.html#
+
+Or run it as a scheduled batch (configure a cron in the application yml)
